@@ -1,0 +1,330 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Clone Factory</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: same single-column lesson card layout as the Broadcast page (scenarios, stage, one code area). */
+:root{
+  --bg:#f3f0e8; --panel:#fffdf7; --ink:#1d2430; --mute:#6a7280; --line:#d9d4c6;
+  --yes:#1f8a4c; --no:#c2412d; --accent:#2b4fd8; --pulse:#f2b705;
+  --stage:#ece6f6; --stage-grid:#dcd2ee; --code:#f6f4ef; --code-dot:#e2ddd0;
+  --font:"Trebuchet MS","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:#14171d;--panel:#1d222b;--ink:#eceff4;--mute:#97a0ae;--line:#323947;--yes:#4cc98a;--no:#ff7a66;--accent:#7e9bff;--stage:#221c30;--stage-grid:#2f2742;--code:#181c24;--code-dot:#2a303c;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:#14171d;--panel:#1d222b;--ink:#eceff4;--mute:#97a0ae;--line:#323947;--yes:#4cc98a;--no:#ff7a66;--accent:#7e9bff;--stage:#221c30;--stage-grid:#2f2742;--code:#181c24;--code-dot:#2a303c;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--font)}
+main{max-width:900px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:1.7rem;margin:.2em 0 .1em;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:1.05rem;margin:0 0 8px}
+p.lead{color:var(--mute);margin:0 0 18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:18px;min-width:0}
+
+/* stage */
+.stagewrap{position:relative;width:100%;max-width:100%;aspect-ratio:4/3;border-radius:10px;overflow:hidden;border:2px solid var(--line);
+  background:var(--stage);background-image:linear-gradient(var(--stage-grid) 1px,transparent 1px),linear-gradient(90deg,var(--stage-grid) 1px,transparent 1px);background-size:10% 13.333%}
+.spr{position:absolute;transform:translate(-50%,-50%);text-align:center;cursor:pointer;transition:left .45s ease,top .45s ease;line-height:1;user-select:none;border:0;background:none;padding:0;color:var(--ink);font:inherit}
+.spr .face{font-size:clamp(22px,5vw,38px);display:block;transition:filter .3s}
+.spr .tag{display:block;font-size:.68rem;font-weight:700;margin-top:2px;white-space:nowrap}
+.spr.orig .tag{background:var(--ink);color:var(--panel);border-radius:8px;padding:0 6px}
+.spr.small .tag{display:none}
+.spr.small .face{font-size:clamp(16px,3.4vw,24px)}
+.spr.ghost{opacity:.3;outline:2px dashed var(--mute);outline-offset:3px;border-radius:8px}
+.spr.ghost .tag::after{content:" (hidden)"}
+.spr.hit{animation:hit .35s forwards}
+@keyframes hit{to{transform:translate(-50%,-50%) scale(1.8);opacity:0}}
+.spr.born .face{animation:born .35s}
+@keyframes born{from{transform:scale(.2)}to{transform:scale(1)}}
+.stack{position:absolute;transform:translate(10px,-38px);background:var(--no);color:#fff;font-weight:700;font-size:.75rem;border-radius:10px;padding:1px 7px;pointer-events:none;white-space:nowrap;z-index:5}
+.limit{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:var(--no);color:#fff;font-weight:700;font-size:.85rem;padding:3px 12px;border-radius:14px;z-index:6}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:6px 10px;min-width:0}
+.stat b{display:block;font-size:1.25rem;font-variant-numeric:tabular-nums}
+.stat span{font-size:.78rem;color:var(--mute)}
+@media (max-width:520px){.stats{grid-template-columns:1fr}}
+
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+button.btn{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer}
+button.btn[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+button.go{background:var(--yes);color:#fff;border-color:var(--yes)}
+button.stop{background:var(--no);color:#fff;border-color:var(--no)}
+.opt{display:flex;align-items:center;gap:6px;font-size:.9rem;font-weight:600}
+.opt select{font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:4px 6px}
+.predict{background:var(--bg);border-left:5px solid var(--pulse);border-radius:6px;padding:8px 12px;margin:0 0 18px;font-size:.95rem}
+.predict.ok{border-color:var(--yes)} .predict.warn{border-color:var(--no)}
+.predict b{display:block;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+
+/* code area */
+.codearea{background:var(--code);background-image:radial-gradient(var(--code-dot) 1.2px,transparent 1.2px);background-size:18px 18px;border:1px solid var(--line);border-radius:10px;padding:16px;
+  display:flex;flex-wrap:wrap;gap:22px 40px;align-items:flex-start;overflow-x:auto}
+.script{flex:none}
+.blk{display:flex;align-items:center;gap:6px;font-weight:700;font-size:.9rem;padding:7px 10px;margin:0 0 2px;border-radius:6px;width:fit-content;white-space:nowrap;transition:box-shadow .2s}
+.ev{background:#ffbf00;color:#2a2000}
+.ct{background:#ffab19;color:#2a1a00}
+.lk{background:#9966ff;color:#fff}
+.mo{background:#4c97ff;color:#fff}
+.hat{border-radius:18px 18px 6px 6px;padding-top:11px}
+.inner{border-left:16px solid #ffab19;padding:2px 0 2px 4px;margin:0 0 2px}
+.cend{height:16px;padding:0;border-radius:0 0 6px 6px;width:120px}
+.cfoot{font-size:.75rem;font-weight:700;color:#2a1a00;text-align:right;padding:0 8px;line-height:16px}
+.val{background:#fff;color:#222;border-radius:14px;padding:1px 10px;font-weight:600}
+.pill{background:#59c059;color:#fff;border-radius:14px;padding:2px 8px;font-size:.8rem}
+.drop{background:rgba(0,0,0,.12);border-radius:14px;padding:1px 8px}
+.running{box-shadow:0 0 0 3px var(--pulse)}
+.tip{color:var(--mute);font-size:.9rem;margin:8px 0 0}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.spr,.spr .face{transition:none;animation:none!important}}
+</style>
+
+<main>
+<h1>Clone = a copy machine</h1>
+<p class="lead">Scarlet Witch uses <b>create clone of myself</b> to make copies of herself. Every clone starts as an exact copy of the sprite that made it, then runs its own <b>when I start as a clone</b> script.</p>
+
+<div class="bar" role="group" aria-label="Scenarios">
+  <button class="btn" id="sc3">Scenario: 3 clones</button>
+  <button class="btn" id="scForever">Scenario: clone forever</button>
+  <button class="btn" id="scNoWait">Scenario: forever, no wait</button>
+  <button class="btn" id="scNoHide">Bug: original not hidden</button>
+  <button class="btn" id="scNoScript">Bug: no clone script</button>
+  <button class="btn" id="scNoPos">Bug: no random position</button>
+  <button class="btn" id="scBomb">Bug: clone makes clones</button>
+</div>
+<div class="predict" id="predict"><b id="predictLabel">Predict first</b><span id="predictText"></span></div>
+
+<div class="card">
+  <div class="bar">
+    <button class="btn go" id="go">🏁 Green flag</button>
+    <button class="btn stop" id="stop">🛑 Stop</button>
+    <label class="opt" for="speed">Speed
+      <select id="speed"><option value="slow">Slow motion</option><option value="normal">Normal</option></select>
+    </label>
+    <label class="opt" for="xray"><input type="checkbox" id="xray"> X-ray: show hidden sprites</label>
+  </div>
+  <div class="stagewrap" id="stage" aria-label="Stage"></div>
+  <div class="stats">
+    <div class="stat"><b id="stOrig">visible</b><span>Original sprite</span></div>
+    <div class="stat"><b id="stClones">0 / 300</b><span>Clones (Scratch limit is 300)</span></div>
+    <div class="stat"><b id="stSeen">1</b><span>Witches you can see</span></div>
+  </div>
+  <p class="tip">Click a witch on the stage to hit her with a web.</p>
+</div>
+
+<div class="card">
+  <h2>Scarlet Witch's code</h2>
+  <div class="codearea" id="code"></div>
+  <p class="tip">The code changes with each scenario. A yellow glow shows the block that is running.</p>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const LIMIT=300, FRAME=33;
+const START={x:-170,y:-110};
+let cfg={}, sprites=[], nextNum=1, runId=0, running=false, limitHit=false, raf=0, active='sc3';
+
+/* ---------- scenarios ---------- */
+const BASE={hide:true,color:true,wait:false,script:true,show:true,pos:true,bomb:false,del:true,loop:'repeat',rep:3,amt:25,waitSec:1};
+const SC={
+  sc3:{q:'Script 1 repeats "create clone" 3 times. How many witches will you see, and will they all look the same?',set:{},speed:'slow'},
+  scForever:{q:'Now the clone block is inside a forever loop with wait 1 second. When will the original stop making clones?',set:{loop:'forever',wait:true},speed:'normal'},
+  scNoWait:{q:'Same forever loop, but there is no wait block. What happens to the clone counter? Is there a limit?',set:{loop:'forever'},speed:'normal'},
+  scNoHide:{q:'The "hide" block is missing. We make 3 clones. How many witches will you see?',set:{hide:false},speed:'slow'},
+  scNoScript:{q:'There is no "when I start as a clone" script. The original hides, then makes 3 clones. Where are the clones?',set:{script:false},speed:'slow'},
+  scNoPos:{q:'The clones show up, but nobody moves them. What will the stage look like?',set:{color:false,pos:false},speed:'slow'},
+  scBomb:{q:'The original makes only 1 clone, but the clone script also says "create clone of myself". How many clones will there be?',set:{rep:1,bomb:true},speed:'normal'},
+};
+
+/* ---------- code area ---------- */
+function codeHTML(c){
+  const loopHead=c.loop==='forever'?'forever':`repeat <span class="val">${c.rep}</span>`;
+  let a=`<div class="blk ev hat" id="bFlag">when 🏁 clicked</div>`;
+  if(c.hide) a+=`<div class="blk lk" id="bHide">hide</div>`;
+  a+=`<div class="blk ct" id="bLoop">${loopHead}</div><div class="inner">`;
+  a+=`<div class="blk ct" id="bCreate">create clone of <span class="drop">myself ▾</span></div>`;
+  if(c.color) a+=`<div class="blk lk" id="bColor">change <span class="drop">color ▾</span> effect by <span class="val">${c.amt}</span></div>`;
+  if(c.wait) a+=`<div class="blk ct" id="bWait">wait <span class="val">${c.waitSec}</span> seconds</div>`;
+  a+=`</div><div class="blk ct cend"><span class="cfoot">↻</span></div>`;
+  let s=`<div class="script">${a}</div>`;
+  if(c.script){
+    let b=`<div class="blk ct hat" id="bStart">when I start as a clone</div>`;
+    if(c.show) b+=`<div class="blk lk" id="bShow">show</div>`;
+    if(c.pos) b+=`<div class="blk mo" id="bPos">go to x: <span class="pill">pick random -200 to 200</span> y: <span class="pill">pick random -140 to 140</span></div>`;
+    if(c.bomb) b+=`<div class="blk ct" id="bBomb">create clone of <span class="drop">myself ▾</span></div>`;
+    s+=`<div class="script">${b}</div>`;
+  }
+  s+=`<div class="script"><div class="blk ev hat" id="bClick">when this sprite clicked</div>${c.del?'<div class="blk ct" id="bDel">delete this clone</div>':''}</div>`;
+  return s;
+}
+function flash(id){const e=$(id); if(!e) return; e.classList.add('running'); setTimeout(()=>e.classList.remove('running'),Math.min(500,stepMs()));}
+
+/* ---------- helpers ---------- */
+const stepMs=()=>$('speed').value==='slow'?650:140;
+const clones=()=>sprites.filter(s=>s.clone);
+const original=()=>sprites.find(s=>!s.clone);
+const alive=id=>id===runId;
+function setPredict(label,text,cls){
+  $('predictLabel').textContent=label; $('predictText').textContent=text;
+  $('predict').className='predict'+(cls?' '+cls:'');
+}
+
+/* ---------- stage ---------- */
+function makeSprite(o){
+  const s={...o,el:document.createElement('button')};
+  s.el.className='spr'+(s.clone?' born':' orig');
+  s.el.type='button';
+  s.el.innerHTML='<span class="face">🧙‍♀️</span><span class="tag"></span>';
+  s.el.onclick=()=>clicked(s);
+  $('stage').appendChild(s.el);
+  sprites.push(s);
+  return s;
+}
+function render(){
+  cancelAnimationFrame(raf);
+  raf=requestAnimationFrame(()=>{
+    const xray=$('xray').checked, many=sprites.length>24;
+    $('stage').querySelectorAll('.stack').forEach(e=>e.remove());
+    const spots={};
+    for(const s of sprites){
+      const e=s.el, tag=e.querySelector('.tag');
+      e.style.left=((s.x+240)/480*100)+'%';
+      e.style.top=((180-s.y)/360*100)+'%';
+      e.querySelector('.face').style.filter=s.effect?`hue-rotate(${(s.effect*1.8)%360}deg)`:'none';
+      tag.textContent=s.clone?'#'+s.n:'original';
+      tag.hidden=false;
+      e.hidden=!s.visible&&!xray;
+      e.classList.toggle('ghost',!s.visible&&xray);
+      e.classList.toggle('small',many);
+      e.setAttribute('aria-label',(s.clone?'Clone '+s.n:'Original')+(s.visible?'':' (hidden)'));
+      if(s.visible||xray){const k=Math.round(s.x)+','+Math.round(s.y); (spots[k]=spots[k]||[]).push(s);}
+    }
+    for(const k in spots){
+      if(spots[k].length<2) continue;
+      spots[k].slice(0,-1).forEach(s=>s.el.querySelector('.tag').hidden=true);
+      const b=document.createElement('div'); b.className='stack';
+      b.textContent='×'+spots[k].length+' here';
+      b.style.left=spots[k][0].el.style.left; b.style.top=spots[k][0].el.style.top;
+      $('stage').appendChild(b);
+    }
+    const o=original();
+    $('stOrig').textContent=o.visible?'visible':'hidden';
+    $('stClones').textContent=clones().length+' / '+LIMIT;
+    $('stSeen').textContent=sprites.filter(s=>s.visible).length;
+    let lim=$('stage').querySelector('.limit');
+    if(limitHit&&!lim){lim=document.createElement('div');lim.className='limit';lim.textContent='Clone limit reached (300)';$('stage').appendChild(lim);}
+    if(!limitHit&&lim) lim.remove();
+  });
+}
+
+/* ---------- Scratch behaviour ---------- */
+function resetStage(){
+  sprites.forEach(s=>s.el.remove()); sprites=[]; nextNum=1; limitHit=false;
+  makeSprite({clone:false,x:START.x,y:START.y,visible:true,effect:0});
+  render();
+}
+function createClone(parent,id){
+  if(!alive(id)) return;
+  if(clones().length>=LIMIT){
+    if(!limitHit){limitHit=true; render(); onLimit();}
+    return;
+  }
+  const c=makeSprite({clone:true,n:nextNum++,x:parent.x,y:parent.y,visible:parent.visible,effect:parent.effect});
+  render();
+  cloneScript(c,id);
+}
+async function cloneScript(c,id){
+  if(!cfg.script) return;
+  const slow=c.n<=4&&$('speed').value==='slow';
+  await sleep(slow?stepMs():FRAME); if(!alive(id)||!sprites.includes(c)) return;
+  if(c.n<=4) flash('bStart');
+  if(cfg.show){c.visible=true; if(c.n<=4) flash('bShow'); render();}
+  if(cfg.pos){
+    await sleep(slow?stepMs()/2:FRAME); if(!alive(id)||!sprites.includes(c)) return;
+    c.x=Math.round(Math.random()*400-200); c.y=Math.round(Math.random()*280-140);
+    if(c.n<=4) flash('bPos');
+    render();
+  }
+  if(cfg.bomb){
+    await sleep(slow?stepMs():FRAME); if(!alive(id)||!sprites.includes(c)) return;
+    flash('bBomb');
+    createClone(c,id);
+  }
+}
+async function run(){
+  const id=++runId; running=true;
+  resetStage();
+  setPredict('Predict first',SC[active].q);
+  const o=original();
+  flash('bFlag');
+  await sleep(stepMs()); if(!alive(id)) return;
+  if(cfg.hide){o.visible=false; flash('bHide'); render(); await sleep(stepMs()); if(!alive(id)) return;}
+  const forever=cfg.loop==='forever';
+  let i=0;
+  while(alive(id)&&(forever||i<cfg.rep)){
+    flash('bLoop'); flash('bCreate');
+    createClone(o,id);
+    if(cfg.color){o.effect+=cfg.amt; flash('bColor');}
+    if(cfg.wait){flash('bWait'); await sleep(cfg.waitSec*1000);} else await sleep(forever?FRAME:stepMs());
+    if(!alive(id)) return;
+    i++;
+    if(forever&&limitHit) return;
+  }
+  if(forever||cfg.bomb) return;
+  await sleep(stepMs()*2+500); if(!alive(id)) return;
+  running=false;
+  explain();
+}
+function explain(){
+  const o=original(), cs=clones(), seen=sprites.filter(s=>s.visible).length, n=cfg.rep;
+  const stacked=new Set(sprites.filter(s=>s.visible).map(s=>s.x+','+s.y)).size<seen;
+  if(cs.length&&cs.every(c=>!c.visible))
+    return setPredict('Answer',`There are ${cs.length} clones, but you can't see any of them. Clones copy the original, and the original was hidden. Fix: add "show" under "when I start as a clone". Turn on X-ray to find them.`,'warn');
+  if(stacked)
+    return setPredict('Answer',`All ${seen} witches are on the same spot, so they look like one witch. Fix: add "go to random position" under "when I start as a clone".`,'warn');
+  if(o.visible)
+    return setPredict('Answer',`You can see ${seen} witches, not ${n}. The original is still visible. Fix: add "hide" at the top of the green flag script.`,'warn');
+  setPredict('Answer',`You can see ${seen} witches. Each clone has a different color, because the color effect changes after every clone is made.`,'ok');
+}
+function onLimit(){
+  if(cfg.bomb) setPredict('Answer','Every new clone runs "when I start as a clone" too, so it makes another clone, which makes another one. The chain only stops at Scratch\'s limit of 300 clones. Fix: never put "create clone of myself" inside the clone script.','warn');
+  else setPredict('Answer','With no wait, the forever loop makes about 30 clones every second. Scratch stops at 300 clones and ignores every "create clone" after that, and the project gets laggy. Fix: add a wait block inside the loop.','warn');
+}
+function stopAll(){
+  const wasForever=running&&cfg.loop==='forever'&&cfg.wait&&!limitHit;
+  const n=clones().length;
+  runId++; running=false;
+  clones().forEach(c=>c.el.remove()); sprites=sprites.filter(s=>!s.clone);
+  original().effect=0; limitHit=false;
+  if(wasForever) setPredict('Answer',`A forever loop never ends by itself. The original made a new clone every second until you pressed Stop. Stop deleted all ${n} clones.`,'ok');
+  render();
+}
+function clicked(s){
+  if(!s.visible||!cfg.del||!s.clone) return;
+  flash('bClick'); flash('bDel');
+  s.el.classList.add('hit');
+  sprites=sprites.filter(x=>x!==s);
+  setTimeout(()=>s.el.remove(),350);
+  render();
+}
+function scenario(key){
+  runId++; running=false;
+  active=key;
+  const s=SC[key];
+  cfg={...BASE,...s.set};
+  $('speed').value=s.speed; $('xray').checked=false;
+  document.querySelectorAll('[id^="sc"]').forEach(b=>b.setAttribute('aria-pressed',b.id===key));
+  $('code').innerHTML=codeHTML(cfg);
+  setPredict('Predict first',s.q);
+  resetStage();
+}
+Object.keys(SC).forEach(k=>$(k).onclick=()=>scenario(k));
+$('go').onclick=run;
+$('stop').onclick=stopAll;
+$('xray').onchange=render;
+scenario('sc3');
+</script>
+
+</body></html>
